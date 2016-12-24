@@ -1,7 +1,42 @@
 class PrivateMailbox(object):
-  '''Represents a physical mailbox object
+  '''Represents a physical mailbox
+
+  PrivateMailbox represents the physical mailbox in the private mailbox store.
+  It consists of BoxHolder objects.
+
+  Attributes:
+    boxholders: list of boxholder objects that are registered to that box
   '''
 
+  def __init__(self):
+    pass
+
+  def add_boxholder(self, boxholder):
+    '''Adds boxholder to this box
+
+    Args:
+      boxholder: can be a person or company box holder
+
+    Returns:
+      None
+    '''
+    pass
+
+  def get_active_names(self):
+    '''Returns only the active names in the box
+
+    Returns:
+      List of active, default names registered to the box
+    '''
+    pass
+
+  def get_all_names(self):
+    '''Returns all of the names registered to the box
+
+    Returns:
+      List of all default names registered to the box
+    '''
+    pass
 
 class BoxHolder(object):
   '''A BoxHolder is a single entity tied to a box number.
