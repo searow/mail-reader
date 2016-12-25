@@ -28,12 +28,23 @@ class MailboxStore(object):
 
     self.boxes[box_num] = box
 
-  def get_box(self, box_num, box):
+  def get_box(self, box_num):
     '''Returns the mailbox object registered to the box number
+
+    Args:
+      box_num: physical box number as string
 
     Returns:
       PrivateMailbox object representing the physical mailbox
     '''
+
+    box_num = str(box_num)
+
+    # Make sure the box we're adding exists
+    if not box_num in self.boxes.keys():
+      raise BoxError('Box ' + box_num + ' doesn\'t exist', box_num)
+
+    return self.boxes[box_num]
 
 
 class PrivateMailbox(object):
