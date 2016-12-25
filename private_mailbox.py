@@ -137,8 +137,6 @@ class PersonBoxHolder(BoxHolder):
                  customer 
     '''
     super(default_name, is_active)
-    self.last_name = default_name[-1]
-    self.other_names = default_name[0:-1]
 
 class CompanyBoxHolder(BoxHolder):
   '''Represents a BoxHolder that is a not a human
@@ -160,8 +158,6 @@ class CompanyBoxHolder(BoxHolder):
                  customer 
     '''
     super(default_name, is_active)
-    self.names = default_name.split
-
 
 class Error(Exception):
   pass
