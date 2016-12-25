@@ -1,3 +1,29 @@
+class MailboxStore(object):
+  '''Represents mailbox store, which is a group of mailboxes
+  '''
+
+  def __init__(self):
+    pass
+
+  def add_box(object, box):
+    '''Adds single box to mailbox store
+
+    Args:
+      box: box representing physical mailbox in the store
+
+    Returns:
+      None
+    '''
+    pass
+
+  def get_box(object, box_number):
+    '''Returns the mailbox object registered to the box number
+
+    Returns:
+      PrivateMailbox object representing the physical mailbox
+    '''
+    pass
+
 class PrivateMailbox(object):
   '''Represents a physical mailbox
 
