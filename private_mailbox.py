@@ -46,7 +46,6 @@ class MailboxStore(object):
 
     return self.boxes[box_num]
 
-
 class PrivateMailbox(object):
   '''Represents a physical mailbox
 
@@ -113,6 +112,7 @@ class BoxHolder(object):
     is_active: bool for active boxholder. Could be inactive from non payments
                or from no longer customer (closed box)
   '''
+  
   def __init__(self, default_name, is_active):
     self.default_name = name
     self.is_active = is_active
@@ -125,7 +125,8 @@ class PersonBoxHolder(BoxHolder):
     other_names: list of strings containing other names, typically consisting
                  of first name and middle names/initials
   '''
-  def __init__(self, default_name, is_active):
+
+  def __init__(self, default_name, is_active, last_name, extra_names):
     '''Creates a BoxHolder that represents a person
 
     Uses the last entry in default_name as the last name of the person and
@@ -135,8 +136,16 @@ class PersonBoxHolder(BoxHolder):
       default_name: default string saved in database
       is_active: bool for whether or not the BoxHolder is an active paying
                  customer 
+      last_name: customer's last name
+      extra_names: other names registered to box (typically first and middle)
+
+    Returns:
+      None
     '''
+
     super(default_name, is_active)
+    self.last_name = last_name
+    self.extra_names = extra_names
 
 class CompanyBoxHolder(BoxHolder):
   '''Represents a BoxHolder that is a not a human
@@ -149,15 +158,22 @@ class CompanyBoxHolder(BoxHolder):
     names: list of strings containing all the names in default order, ie: 
            ['Morgans', 'Box', 'Alterations']
   '''
-  def __init__(self, default_name, is_active):
+
+  def __init__(self, default_name, is_active, names):
     '''Creates a BoxHolder that is represents a company/non-person alias
 
     Args:
       default_name: default string saved in database
       is_active: bool for whether or not the BoxHolder is an active paying
                  customer 
+      names: all of the ID names attached to the box
+
+    Returns:
+      None
     '''
+
     super(default_name, is_active)
+    self.names = names
 
 class Error(Exception):
   pass
