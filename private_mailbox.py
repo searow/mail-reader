@@ -79,7 +79,7 @@ class PrivateMailbox(object):
 
     active_names = []
 
-    for bh in boxholders:
+    for bh in self.boxholders:
       if bh.is_active:
         active_names.append(bh.default_name)
 
@@ -94,7 +94,7 @@ class PrivateMailbox(object):
 
     all_names = []
 
-    for bh in boxholders:
+    for bh in self.boxholders:
       all_names.append(bh.default_name)
 
     return all_names
@@ -112,9 +112,9 @@ class BoxHolder(object):
     is_active: bool for active boxholder. Could be inactive from non payments
                or from no longer customer (closed box)
   '''
-  
+
   def __init__(self, default_name, is_active):
-    self.default_name = name
+    self.default_name = default_name 
     self.is_active = is_active
 
 class PersonBoxHolder(BoxHolder):
@@ -143,7 +143,7 @@ class PersonBoxHolder(BoxHolder):
       None
     '''
 
-    super(default_name, is_active)
+    super().__init__(default_name, is_active)
     self.last_name = last_name
     self.extra_names = extra_names
 
@@ -172,7 +172,7 @@ class CompanyBoxHolder(BoxHolder):
       None
     '''
 
-    super(default_name, is_active)
+    super().__init__(default_name, is_active)
     self.names = names
 
 class Error(Exception):
