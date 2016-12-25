@@ -92,7 +92,13 @@ class PrivateMailbox(object):
     Returns:
       List of all default names registered to the box
     '''
-    pass
+
+    all_names = []
+
+    for bh in boxholders:
+      all_names.append(bh.default_name)
+
+    return all_names
 
 class BoxHolder(object):
   '''A BoxHolder is a single entity tied to a box number.
