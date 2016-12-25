@@ -1,28 +1,40 @@
 class MailboxStore(object):
   '''Represents mailbox store, which is a group of mailboxes
+
+  Attributes:
+    boxes: dictionary of boxes, with string keys for box numbers
   '''
 
   def __init__(self):
-    pass
+    '''Init with empty dict for storing box keys'''
+    self.boxes = {}
 
-  def add_box(object, box):
+  def add_box(self, box_num, box):
     '''Adds single box to mailbox store
 
     Args:
+      box_num: physical box number
       box: box representing physical mailbox in the store
 
     Returns:
       None
     '''
-    pass
 
-  def get_box(object, box_number):
+    box_num = str(box_num)
+
+    # Make sure the box we're adding is empty
+    if box_num in self.boxes.keys():
+      raise BoxError('Box ' + box_num + ' already exists', box_num)
+
+    self.boxes[box_num] = box
+
+  def get_box(self, box_num, box):
     '''Returns the mailbox object registered to the box number
 
     Returns:
       PrivateMailbox object representing the physical mailbox
     '''
-    pass
+
 
 class PrivateMailbox(object):
   '''Represents a physical mailbox
@@ -100,7 +112,7 @@ class PersonBoxHolder(BoxHolder):
       is_active: bool for whether or not the BoxHolder is an active paying
                  customer 
     '''
-    super(default_name is_active)
+    super(default_name, is_active)
     self.last_name = default_name[-1]
     self.other_names = default_name[0:-1]
 
@@ -126,3 +138,12 @@ class CompanyBoxHolder(BoxHolder):
     super(default_name, is_active)
     self.names = default_name.split
 
+
+class Error(Exception):
+  pass
+
+class BoxError(Error):
+  '''Occurs when trying to perform operations accessing Boxes'''
+  def __init__(self, message, box_num):
+    self.message = message
+    self.box_num = box_num
