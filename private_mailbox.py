@@ -58,7 +58,7 @@ class PrivateMailbox(object):
   '''
 
   def __init__(self):
-    pass
+    self.boxholders = []
 
   def add_boxholder(self, boxholder):
     '''Adds boxholder to this box
@@ -69,7 +69,7 @@ class PrivateMailbox(object):
     Returns:
       None
     '''
-    pass
+    self.boxholders.append(boxholder)
 
   def get_active_names(self):
     '''Returns only the active names in the box
@@ -77,7 +77,14 @@ class PrivateMailbox(object):
     Returns:
       List of active, default names registered to the box
     '''
-    pass
+
+    active_names = []
+
+    for bh in boxholders:
+      if bh.is_active:
+        active_names.append(bh.default_name)
+
+    return active_names
 
   def get_all_names(self):
     '''Returns all of the names registered to the box
