@@ -14,3 +14,9 @@ class QuickNameAccess(object):
       List of box numbers as strings, in descending order of match strength
     '''
     pass
+
+class QuickAccessEntry(object):
+  '''Entries for the QuickNameAccess object'''
+
+  def __init__(self):
+    pass
