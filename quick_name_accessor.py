@@ -44,5 +44,16 @@ class QuickNameAccess(object):
 class QuickAccessEntry(object):
   '''Entries for the QuickNameAccess object'''
 
-  def __init__(self):
-    pass
+  def __init__(self, name, box_num):
+    '''Inits entry with a name associated with a box number
+
+    Args:
+      name: string name to be added
+      box_num: box number that the name is registered to
+
+    Returns:
+      None
+    '''
+
+    self.name = name
+    self.box_num = box_num
