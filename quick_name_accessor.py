@@ -1,3 +1,5 @@
+import store_data_formatter as sdf
+
 class QuickNameAccess(object):
   '''Allows quick name lookups to get related box numbers
 
@@ -14,11 +16,26 @@ class QuickNameAccess(object):
     '''Init with empty access dictionary'''
     self.letter_access = {}
 
+  def create_entries_with_formatter(self, data_formatter):
+    while data_formatter.has_next_customer():
+      line = data_formatter.format_next_customer()
+
+      # Each line can have multiple customers, so process each individually
+      for item in line:
+        name = item[0]
+        box = item[1]
+        letter = name[0]
+        entry = QuickAccessEntry(name, box)
+        self.add_entry(letter, entry)
+
   def find_matches_by_name(self, name):
-    '''Given a name to identify the boxholder, returns best box matches
+    '''Given a set of names to identify boxholder, returns best box matches
+
+    Name matching is performed by edit distance. Matches do not have to be 
+    perfect to work.
 
     Args:
-      name: string of name to identify boxholder
+      name: list of strings of name to identify boxholder
 
     Returns:
       List of box numbers as strings, in descending order of match strength
