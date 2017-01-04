@@ -1,4 +1,5 @@
 import abc
+import pandas as pd
 
 class StoreDataFormatter(metaclass=abc.ABCMeta):
   '''Abstract class to format existing customer data 
@@ -10,11 +11,33 @@ class StoreDataFormatter(metaclass=abc.ABCMeta):
   use the information.
   '''
 
-  def __init__(self):
-    '''Read the data file and store it in memory'''
+  def __init__(self, fname):
     pass
 
   @abc.abstractmethod
   def format_next_customer(self):
     '''Returns formatted version of next customer line-item, if it exists'''
+    pass
+
+  def get_data_len(self):
+    '''Returns number of line items stored'''
+    return len(self.data)
+
+class BAPDataFormatter(StoreDataFormatter):
+  '''DataFormatter subclass for BAP store'''
+
+  def __init__(self, fname):
+    '''Read the data file and store it in memory
+
+    Args:
+      fname: excel file name containing the data to be formatted
+
+    Returns:
+      None
+    '''
+    df = pd.read_excel(fname)
+    headers = ['NAME', 'SUITE']
+    self.data = df[headers]
+
+  def format_next_customer(self):
     pass
