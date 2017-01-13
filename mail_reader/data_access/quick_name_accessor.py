@@ -1,6 +1,6 @@
-import store_data_formatter as sdf
+import mail_reader.data_access.store_data_formatter as sdf
 import difflib
-import name_scoring
+import mail_reader.data_access.name_scoring as name_scoring
 
 class QuickNameAccess(object):
   '''Allows quick name lookups to get related box numbers

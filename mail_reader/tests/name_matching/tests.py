@@ -1,12 +1,12 @@
 import unittest
 import pandas as pd
-import quick_name_accessor as qna
-import store_data_formatter as sdf
+import mail_reader.data_access.quick_name_accessor as qna
+import mail_reader.data_access.store_data_formatter as sdf
 
 class TestQuickNameAccessor(unittest.TestCase):
   def setUp(self):
     # TODO(searow): consider switching this to setUpClass for performance 
-    fname = './tests/name_matching/name_to_box_number.xlsx'
+    fname = './mail_reader/tests/name_matching/name_to_box_number.xlsx'
     formatter = sdf.BAPDataFormatter(fname)
     self.name_accessor = qna.QuickNameAccess()
     self.name_accessor.create_entries_with_formatter(formatter)

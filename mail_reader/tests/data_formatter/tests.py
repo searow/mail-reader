@@ -1,13 +1,13 @@
 import unittest
 import pandas as pd
-import store_data_formatter as sdf
+import mail_reader.data_access.store_data_formatter as sdf
 
 class TestDataFormatter(unittest.TestCase):
   def setUp(self):
     # TODO(searow): consider switching this to setUpClass for performance 
 
     # Load the desired data formatter object
-    fname = './tests/data_formatter/BAP_example_data.xlsx'
+    fname = './mail_reader/tests/data_formatter/BAP_example_data.xlsx'
     self.data_formatter = sdf.BAPDataFormatter(fname)
 
   def test_read_file_line_numbers(self):
