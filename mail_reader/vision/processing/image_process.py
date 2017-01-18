@@ -11,7 +11,7 @@ class ImageProcessor(object):
   def __init__(self):
     pass
 
-  def set_base_image(self, image):
+  def process_image(self, image):
     """Sets base image - original image to analyze.
 
     Creates working image reference also, which will be used to perform 
