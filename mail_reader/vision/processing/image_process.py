@@ -34,7 +34,7 @@ class ImageProcessor(object):
     """
     pass
 
-  def fix_image_skew(self):
+  def _fix_image_skew(self):
     """Calculates image skew and rotates image to be horizontal.
 
     Returns:
@@ -42,7 +42,7 @@ class ImageProcessor(object):
     """
     pass
 
-  def find_region_of_interest(self):
+  def _find_region_of_interest(self):
     """Finds best match for region of interest.
     
     Region of interest for letter mail is addressee section.
@@ -52,7 +52,7 @@ class ImageProcessor(object):
     """
     pass
 
-  def segment_region_of_interest(self):
+  def _segment_region_of_interest(self):
     """Crops region of interest and segments image.
 
     Segmentation of region of interest is meant to find addressee lines as 
