@@ -1,3 +1,5 @@
+import cv2
+
 class ImageProcessor(object):
   """Prepares images for OCR processing.
 
@@ -9,10 +11,15 @@ class ImageProcessor(object):
 
   Ultimately is responsible for creating strings of text that represent what
   is on the mail itself.
+
+  Attributes:
+    ocr_processor: OcrProcessor object responsible for actual OCR processing
+    original_image: unaltered image to be processed
+    working_image: working image workspace, constantly changing
   """
   def __init__(self, ocr_processor):
     """Inits with an OcrProcessor to specify OCR engine"""
-    pass
+    self.ocr_processor = ocr_processor
 
   def get_text_lines(self, image):
     """Finds and returns addressee text lines.
@@ -53,14 +60,78 @@ class ImageProcessor(object):
     """Calculates rotation angle of the image from horizontal, in degrees
 
     Rotation angle is given in degrees, representing the current rotation value
-    from horizontal, counterclockwise. The amount of clockwise rotation to 
+    from horizontal, clockwise. The amount of counterclockwise rotation to 
     correct the image to be horizontal is the negative of the return value.
 
     Returns:
       Angle of rotation in degrees.
     """
-    pass
 
+    blur_kernel = (5, 5)
+    # (40, 40) closing kernel seems pretty good for 720p image for addressee
+    close_struct = (40, 40)
+
+    img = self._find_edges_and_remove_noise(self.original_image, blur_kernel)
+    contours = self._isolate_text_regions(img, close_struct)
+
+    rect = cv2.minAreaRect(contours[0])
+    angle = rect[2]
+    if angle < -45:
+      angle += 90
+
+    return angle
+
+  def _find_edges_and_remove_noise(self, img, blur_size):
+    '''Returns an image with noise removed
+
+    Accepts a grayscale image, identifies regions of interest, and removes any
+    noise in the image.
+
+    Args:
+      img: image to process in grayscale
+      blur_size: tuple containing (width, height) parameters for blur size
+
+    Returns:
+      image containing regions of interest with noise removed
+    '''
+
+    # Find the edges in the image, using 1st order sobel operator in both
+    # directions 
+    img = cv2.Sobel(img, ddepth=-1, dx=1, dy=1)
+
+    # Remove noise from image
+    img = cv2.blur(img, ksize=blur_size)
+    _, img = cv2.threshold(img, thresh=0, maxval=255,
+                           type=cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+    return img
+
+  def _isolate_text_regions(self, img, closing_size):
+    '''Returns a list of contours that contain potential text regions
+
+    Uses a thresholded image with edges defined to find text regions. Input image
+    needs to have text edges highligted. Performs closing operation to create
+    filled contours to find regions of text
+
+    Args:
+      img: thresholded image to find text regions
+      closing_size: tuple containing (width, height) of closing element
+
+    Returns:
+      List of contours in sorted order by contour area
+    '''
+
+    # Morph closing to fill in the text areas. Use a large rectangle b/c we want
+    # text regions to be physically connected
+    close_elem = cv2.getStructuringElement(cv2.MORPH_RECT, ksize=closing_size)
+    img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, close_elem)
+
+    # Find and sort the contours by area
+    _, cont, _ = cv2.findContours(img.copy(), cv2.RETR_EXTERNAL,
+                                  cv2.CHAIN_APPROX_SIMPLE)
+    contours = sorted(cont, key=cv2.contourArea, reverse=True)
+
+    return contours
 
   def _rotate_image(self, angle):
     """Rotates image by angle.
