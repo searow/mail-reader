@@ -7,26 +7,41 @@ class ImageProcessor(object):
     - segmentation of roi by type (name fields, address fields, city, etc)
     - image clarity (OCR prep: black and white, noise reduction)
 
+  Ultimately is responsible for creating strings of text that represent what
+  is on the mail itself.
   """
-  def __init__(self):
+  def __init__(self, ocr_processor):
+    """Inits with an OcrProcessor to specify OCR engine"""
     pass
 
-  def process_image(self, image):
+  def get_text_lines(self, image):
+    """Finds and returns addressee text lines.
+    
+    Performs image preprocessing steps, uses OcrProcessor to perform OCR on the 
+    preprocessed image, and returns the text lines that are in the addressee 
+    section of the image.
+
+    Args:
+      image: Image of the mail item that is to be processed.
+
+    Returns:
+      Array of strings representing each line that was read.
+    """
+    pass
+
+  def _process_image(self):
     """Sets base image - original image to analyze.
 
     Creates working image reference also, which will be used to perform 
     sequential image processing steps so we can refer to original image if 
     needed.
 
-    Args:
-      image: image to analyze
-
     Returns:
       None
     """
     pass
 
-  def get_mail_fields(self):
+  def _get_mail_fields(self):
     """Returns MailFields that contains addressee information obtained from OCR.
 
     Returns:
@@ -34,8 +49,25 @@ class ImageProcessor(object):
     """
     pass
 
-  def _fix_image_skew(self):
-    """Calculates image skew and rotates image to be horizontal.
+  def _calculate_rotation(self):
+    """Calculates rotation angle of the image from horizontal, in degrees
+
+    Rotation angle is given in degrees, representing the current rotation value
+    from horizontal, counterclockwise. The amount of clockwise rotation to 
+    correct the image to be horizontal is the negative of the return value.
+
+    Returns:
+      Angle of rotation in degrees.
+    """
+    pass
+
+
+  def _rotate_image(self, angle):
+    """Rotates image by angle.
+
+    Rotated image keeps the entire original field of view visible. The 
+    resulting image is larger than the original due to extra white space from
+    rotation.
 
     Returns:
       None
