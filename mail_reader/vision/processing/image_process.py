@@ -1,4 +1,187 @@
 import cv2
+import numpy as np
+
+def _calculate_rotation(image):
+  """Calculates rotation angle of the image from horizontal, in degrees
+
+  Rotation angle is given in degrees, representing the current rotation value
+  from horizontal, clockwise. 
+
+  Returns:
+    Angle of rotation in degrees.
+  """
+
+  blur_kernel = (5, 5)
+  # (40, 40) closing kernel seems pretty good for 720p image for addressee
+  close_struct = (40, 40)
+
+  cleaned = _find_edges_and_remove_noise(image, blur_kernel)
+  contours = _isolate_text_regions(cleaned, close_struct)
+
+  rect = cv2.minAreaRect(contours[0])
+  angle = rect[2]
+  if angle < -45:
+    angle += 90
+
+  return angle
+  
+def _rotate_image_ccwise(image, angle):
+  """Rotates image by angle.
+
+  Rotated image keeps the entire original field of view visible. The 
+  resulting image is larger than the original due to extra white space from
+  rotation.
+
+  Args:
+    image: Image to be rotated
+    angle: Angle to rotate image. Positive = counterclockwise rotation
+
+  Returns:
+    None
+  """
+  rows, cols = image.shape
+
+  # Rotate image around center point of original image, cropping anything 
+  # that falls outside of original range. 
+  M = cv2.getRotationMatrix2D((int(cols/2), int(rows/2)), angle, 1)
+  rotated = cv2.warpAffine(image, M, (cols, rows))
+
+  return rotated
+
+def _find_edges_and_remove_noise(img, blur_size):
+  """Returns an image with noise removed.
+
+  Accepts a grayscale image, identifies regions of interest, and removes any
+  noise in the image.
+
+  Args:
+    img: image to process in grayscale
+    blur_size: tuple containing (width, height) parameters for blur size
+
+  Returns:
+    image containing regions of interest with noise removed
+  """
+
+  # Find the edges in the image, using 1st order sobel operator in both
+  # directions 
+  edges = cv2.Sobel(img, ddepth=-1, dx=1, dy=1)
+
+  # Remove noise from image
+  blurred = cv2.blur(edges, ksize=blur_size)
+  _, cleaned = cv2.threshold(blurred, thresh=0, maxval=255,
+                             type=cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+  return cleaned
+
+def _find_best_contour(contours, center):
+  """Finds best contour, weighted by contour area and distance from center.
+  
+  Region of interest for letter mail is addressee section. For manual mail
+  scanning, region of interest will be heavily biased by position. Center of
+  the image is set for heavy weighting of ROI.
+
+  Returns:
+    Points of smallest bounding box encompassing region of interest
+  """
+
+  # rows, cols = image.shape
+  # center = [int(rows/2), int(cols/2)]
+  # Maximum distance is from center (0,0) to any corner (+-rows/2,+-cols/2)
+  max_dist = np.sqrt((center[1])**2 + (center[0])**2)
+
+  # Only use the 5 largest contours. If any more, our image probably
+  # has too much going on in it
+  max_contours = 5
+  max_contour_area = cv2.contourArea(contours[0])
+
+  # Calculate and add the score values for each contour
+  scores = []
+  for c in contours[:5]:
+
+    moments = cv2.moments(c)
+
+    if moments['m00'] == 0:
+      moments['m00'] = 1
+    cent_row = int(moments['m10']/moments['m00'])
+    cent_col = int(moments['m01']/moments['m00'])
+    dist = np.sqrt((cent_row - center[0])**2 + 
+                   (cent_col - center[1])**2)
+
+    norm_dist = 1 - dist/max_dist
+    norm_area = cv2.contourArea(c)/max_contour_area
+
+    score = norm_dist * norm_area
+    scores.append(score)
+
+  # We only use the largest value, which will normally be idx 0
+  max_score_idx = np.argmax(scores)
+
+  return contours[max_score_idx]
+
+def _get_box_from_contour(contour):
+  """Returns the minimum box containing the contour (4 corner pts)
+
+  Args:
+    contour: contour object from _find_best_contour method, represents the
+             outline contour detected
+
+  Returns:
+    Four corner points of minimum containing rectangle (box) and the coords
+    of (height, width) of center
+  """
+  rect = cv2.minAreaRect(contour)
+  box = np.int0(cv2.boxPoints(rect))
+
+  center_height = np.mean(box[:, 1])
+  center_width = np.mean(box[:, 0])
+
+  return box, (center_height, center_width)
+
+def _isolate_text_regions(img, closing_size):
+  """Returns a list of contours that contain potential text regions
+
+  Uses a thresholded image with edges defined to find text regions. Input image
+  needs to have text edges highligted. Performs closing operation to create
+  filled contours to find regions of text
+
+  Args:
+    img: thresholded image to find text regions
+    closing_size: tuple containing (width, height) of closing element
+
+  Returns:
+    List of contours in sorted order by contour area
+  """
+
+  # Morph closing to fill in the text areas. Use a large rectangle b/c we want
+  # text regions to be physically connected
+  close_elem = cv2.getStructuringElement(cv2.MORPH_RECT, ksize=closing_size)
+  closed_img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, close_elem)
+
+  # Find and sort the contours by area
+  # TODO(searow): maybe don't need closed_img.copy() since we're creating 
+  #               a new copy in closed_img anyways and not modifying img?
+  _, cont, _ = cv2.findContours(closed_img.copy(), cv2.RETR_EXTERNAL,
+                                cv2.CHAIN_APPROX_SIMPLE)
+  contours = sorted(cont, key=cv2.contourArea, reverse=True)
+
+  return contours
+
+def _get_text_line_contours(img):
+  """Finds horizontal lines of text and returns the contours.
+
+  Horizontal lines of text are found via morphological closing operation. The
+  best matches are used to determine the region of interest.
+
+  Returns:
+    List of contours in descending area order
+  """
+
+  blur_size = (5, 5)
+  text_find_size = (50, 50)
+  cleaned = _find_edges_and_remove_noise(img, blur_size)
+  contours = _isolate_text_regions(cleaned, text_find_size)
+
+  return contours  
 
 class ImageProcessor(object):
   """Prepares images for OCR processing.
@@ -56,104 +239,7 @@ class ImageProcessor(object):
     """
     pass
 
-  def _calculate_rotation(self):
-    """Calculates rotation angle of the image from horizontal, in degrees
 
-    Rotation angle is given in degrees, representing the current rotation value
-    from horizontal, clockwise. The amount of counterclockwise rotation to 
-    correct the image to be horizontal is the negative of the return value.
-
-    Returns:
-      Angle of rotation in degrees.
-    """
-
-    blur_kernel = (5, 5)
-    # (40, 40) closing kernel seems pretty good for 720p image for addressee
-    close_struct = (40, 40)
-
-    img = self._find_edges_and_remove_noise(self.original_image, blur_kernel)
-    contours = self._isolate_text_regions(img, close_struct)
-
-    rect = cv2.minAreaRect(contours[0])
-    angle = rect[2]
-    if angle < -45:
-      angle += 90
-
-    return angle
-
-  def _find_edges_and_remove_noise(self, img, blur_size):
-    '''Returns an image with noise removed
-
-    Accepts a grayscale image, identifies regions of interest, and removes any
-    noise in the image.
-
-    Args:
-      img: image to process in grayscale
-      blur_size: tuple containing (width, height) parameters for blur size
-
-    Returns:
-      image containing regions of interest with noise removed
-    '''
-
-    # Find the edges in the image, using 1st order sobel operator in both
-    # directions 
-    img = cv2.Sobel(img, ddepth=-1, dx=1, dy=1)
-
-    # Remove noise from image
-    img = cv2.blur(img, ksize=blur_size)
-    _, img = cv2.threshold(img, thresh=0, maxval=255,
-                           type=cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-
-    return img
-
-  def _isolate_text_regions(self, img, closing_size):
-    '''Returns a list of contours that contain potential text regions
-
-    Uses a thresholded image with edges defined to find text regions. Input image
-    needs to have text edges highligted. Performs closing operation to create
-    filled contours to find regions of text
-
-    Args:
-      img: thresholded image to find text regions
-      closing_size: tuple containing (width, height) of closing element
-
-    Returns:
-      List of contours in sorted order by contour area
-    '''
-
-    # Morph closing to fill in the text areas. Use a large rectangle b/c we want
-    # text regions to be physically connected
-    close_elem = cv2.getStructuringElement(cv2.MORPH_RECT, ksize=closing_size)
-    img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, close_elem)
-
-    # Find and sort the contours by area
-    _, cont, _ = cv2.findContours(img.copy(), cv2.RETR_EXTERNAL,
-                                  cv2.CHAIN_APPROX_SIMPLE)
-    contours = sorted(cont, key=cv2.contourArea, reverse=True)
-
-    return contours
-
-  def _rotate_image(self, angle):
-    """Rotates image by angle.
-
-    Rotated image keeps the entire original field of view visible. The 
-    resulting image is larger than the original due to extra white space from
-    rotation.
-
-    Returns:
-      None
-    """
-    pass
-
-  def _find_region_of_interest(self):
-    """Finds best match for region of interest.
-    
-    Region of interest for letter mail is addressee section.
-
-    Returns:
-      Points of smallest bounding box encompassing region of interest
-    """
-    pass
 
   def _segment_region_of_interest(self):
     """Crops region of interest and segments image.
