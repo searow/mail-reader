@@ -217,7 +217,35 @@ class ImageProcessor(object):
     Returns:
       Array of strings representing each line that was read.
     """
-    pass
+
+    # - Save image and working copy (grayscale first)
+    # - Preprocess image
+    #   Rotation
+    #   - Find rotation
+    #   - Perform rotation
+    #   Image handling
+    #   - Threshold
+    #   Image identification
+    #   - _get_text_line_contours
+    #   - _find_best_contour
+    #   - _get_box_from_contour
+    #   Prepare ROI for OCR
+    #   - segment image (subsection image using ROI)
+    #   - clean image (opening operation?)
+    #   - copy image for analysis
+    #   - text line contours again, but thin horizontals
+
+    # Original image used for color reproduction and overlays if needed
+    # working_image used for all forwards processes (things that won't need
+    # to be reversed)
+    self.original_image = image
+    self.working_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+
+    preprocessed_image = self._preprocess()
+
+    ocr_results = self._perform_ocr()
+
+    return ocr_results
 
   def _process_image(self):
     """Sets base image - original image to analyze.
@@ -228,6 +256,14 @@ class ImageProcessor(object):
 
     Returns:
       None
+    """
+    pass
+
+  def _perform_ocr(self):
+    """Performs OCR on image using ocr_processor.
+
+    Returns:
+      Array of strings representing individual lines on document
     """
     pass
 
