@@ -1,52 +1,35 @@
 import cv2
 import numpy as np
 
-def _calculate_rotation(image):
-  """Calculates rotation angle of the image from horizontal, in degrees
+def _fix_image_rotation(img, config):
+  """Returns rotated image to horizontal and angle in degrees.
 
-  Rotation angle is given in degrees, representing the current rotation value
-  from horizontal, clockwise. 
+  Args:
+    img: Image that contains rotation to be corrected.
+    config: PreprocessConfig object containing rotation parameters.
 
   Returns:
-    Angle of rotation in degrees.
+    rotated_img: Image with rotation applied. Image is rotated about the 
+                 centerpoint with edges cropped as needed.
+    angle: Angle that the image was rotated. Positive angle means the image
+           was rotated counter-clockwise to get to its new position.
   """
+  contours = _identify_contours(img, config)
 
-  blur_kernel = (5, 5)
-  # (40, 40) closing kernel seems pretty good for 720p image for addressee
-  close_struct = (40, 40)
-
-  cleaned = _find_edges_and_remove_noise(image, blur_kernel)
-  contours = _isolate_text_regions(cleaned, close_struct)
-
+  # Use the largest contour to determine angle. Note that angle given is
+  # -90 < angle <= 0, so correct sign to be how we want.
   rect = cv2.minAreaRect(contours[0])
   angle = rect[2]
   if angle < -45:
     angle += 90
 
-  return angle
-  
-def _rotate_image_ccwise(image, angle):
-  """Rotates image by angle.
-
-  Rotated image keeps the entire original field of view visible. The 
-  resulting image is larger than the original due to extra white space from
-  rotation.
-
-  Args:
-    image: Image to be rotated
-    angle: Angle to rotate image. Positive = counterclockwise rotation
-
-  Returns:
-    None
-  """
-  rows, cols = image.shape
-
-  # Rotate image around center point of original image, cropping anything 
-  # that falls outside of original range. 
+  # Correct the image using center of image as rotation point. Anything that
+  # falls outside the original image size due to rotation is cropped.
+  rows, cols = img.shape
   M = cv2.getRotationMatrix2D((int(cols/2), int(rows/2)), angle, 1)
-  rotated = cv2.warpAffine(image, M, (cols, rows))
+  rotated_img = cv2.warpAffine(img, M, (cols, rows))
 
-  return rotated
+  return rotated_img, angle
 
 def _find_edges_and_remove_noise(img, blur_size):
   """Returns an image with noise removed.
@@ -166,22 +149,68 @@ def _isolate_text_regions(img, closing_size):
 
   return contours
 
-def _get_text_line_contours(img):
-  """Finds horizontal lines of text and returns the contours.
+def _identify_contours(img, config):
+  """Finds and returns contours in decreasing size order.
 
-  Horizontal lines of text are found via morphological closing operation. The
-  best matches are used to determine the region of interest.
+  Finds contours in 2 steps: 1) finds edges and removes noise 2) performs
+  morphological closing operation to aggregate connected regions. The config
+  provides the information on how to performs these options, specifically in
+  the blur_kernel size (removes noise) and the morph_close_size which dictates
+  how many pixels to include in the closing operation. Returns the associated
+  contours in decreasing size order.
+
+  Args:
+    img: image to search
+    config: PreprocessConfig object for configuration options
 
   Returns:
-    List of contours in descending area order
+    Contours in decreasing order by pixel area
   """
+  cleaned = _find_edges_and_remove_noise(img, config.blur_size)
+  contours = _isolate_text_regions(cleaned, config.morph_close_size)
 
-  blur_size = (5, 5)
-  text_find_size = (50, 50)
-  cleaned = _find_edges_and_remove_noise(img, blur_size)
-  contours = _isolate_text_regions(cleaned, text_find_size)
+  return contours
 
-  return contours  
+def _crop_image_to_contour(img, contour):
+  """Given an image and contour, crop the image to only include contour.
+
+  Args:
+    img: image to be cropped
+    contour: contour on the image that designates the bounds to be cropped
+
+  Returns:
+    New cropped image only containing contour area
+  """
+  roi_box, center = _get_box_from_contour(contour)
+  rows, cols = img.shape
+
+  # Isolate ROI
+  # Min values are 0 for bot/left, max are width or height for top/right
+  bot = min(roi_box[:,1])
+  bot = 0 if bot < 0 else bot
+  top = max(roi_box[:,1])
+  top = rows if top >= rows else top
+  left = min(roi_box[:,0])
+  left = 0 if left < 0 else left
+  right = max(roi_box[:,0])
+  right = cols if right >= cols else right
+
+  cropped_img = img[bot:top, left:right]
+
+  return cropped_img
+
+class PreprocessConfig(object):
+  """Holds preprocessing configuration values for different operations."""
+
+  def __init__(self, blur_size, morph_close_size):
+    """Inits with desired sizes.
+
+    Args:
+      blur_size: tuple (x, y) of blur size for cleaning operations
+      morph_close_size: tuple (x, y) of closing size for contour recognition
+    """
+    self.blur_size = blur_size
+    self.morph_close_size = morph_close_size
 
 class ImageProcessor(object):
   """Prepares images for OCR processing.
@@ -196,10 +225,20 @@ class ImageProcessor(object):
   is on the mail itself.
 
   Attributes:
-    ocr_processor: OcrProcessor object responsible for actual OCR processing
-    original_image: unaltered image to be processed
-    working_image: working image workspace, constantly changing
+    ocr_processor: OcrProcessor object responsible for actual OCR processing.
+    original_image: Unaltered image to be processed.
+    working_image: Working image workspace, constantly changing.
+    preprocessed_images: Set of preprocessed images, ready for OCR.
   """
+  # TODO(searow): these sizes are based on 720p camera set to 1280 x 720 
+  #               resolution. they should probably be based on % of pixels
+  #               since actual physical letter size dictates how many pixels
+  #               to examine at a time.
+  main_contour_cfg = PreprocessConfig((5, 5), (50, 50))
+  # line_contour_cfg.morph_close_size currently being overriden in _preprocess
+  line_contour_cfg = PreprocessConfig((5, 5), (50, 3))
+  rotation_cfg = PreprocessConfig((5, 5), (40, 40))
+
   def __init__(self, ocr_processor):
     """Inits with an OcrProcessor to specify OCR engine"""
     self.ocr_processor = ocr_processor
@@ -218,22 +257,6 @@ class ImageProcessor(object):
       Array of strings representing each line that was read.
     """
 
-    # - Save image and working copy (grayscale first)
-    # - Preprocess image
-    #   Rotation
-    #   - Find rotation
-    #   - Perform rotation
-    #   Image handling
-    #   - Threshold
-    #   Image identification
-    #   - _get_text_line_contours
-    #   - _find_best_contour
-    #   - _get_box_from_contour
-    #   Prepare ROI for OCR
-    #   - segment image (subsection image using ROI)
-    #   - clean image (opening operation?)
-    #   - copy image for analysis
-    #   - text line contours again, but thin horizontals
 
     # Original image used for color reproduction and overlays if needed
     # working_image used for all forwards processes (things that won't need
@@ -241,51 +264,63 @@ class ImageProcessor(object):
     self.original_image = image
     self.working_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
 
-    preprocessed_image = self._preprocess()
-
+    # Preprocess is ALL image manipulation before OCR, but not including OCR
+    self._preprocess()
+    for img in self.preprocessed_images:
+      cv2.imshow('i', img)
+      cv2.waitKey(0)
     ocr_results = self._perform_ocr()
 
     return ocr_results
 
-  def _process_image(self):
-    """Sets base image - original image to analyze.
+  def _preprocess(self):
+    """Preprocesses input image to prepare for OCR.
 
-    Creates working image reference also, which will be used to perform 
-    sequential image processing steps so we can refer to original image if 
-    needed.
+    Preprocessing handles all image manupulation. Returned image is ready for
+    OCR analysis. Resulting images are instance variable preprocessed_images.
 
     Returns:
       None
     """
-    pass
+    # TODO(searow): refactor here to isolate each general step
+    # Rotation correction
+    rotated_img, angle = _fix_image_rotation(self.working_image, 
+                                             self.rotation_cfg)
+    # rotation = _calculate_rotation(self.working_image)
+    # rotated_img = _rotate_image_ccwise(self.working_image, rotation)
+
+    # Threshold to binary to allow morphological operations
+    _, thresh_img = cv2.threshold(rotated_img, thresh=0, maxval=255,
+                                  type=cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+
+    # Identify the region of interest (ROI), which should be addressee label
+    contours = _identify_contours(rotated_img, self.main_contour_cfg)
+    img_center = (rotated_img.shape[0]/2, rotated_img.shape[1]/2)
+    best_contour = _find_best_contour(contours, img_center)
+    cropped_img = _crop_image_to_contour(rotated_img, best_contour)
+
+    # Identify lines within ROI
+    # TODO(searow): using width/2 for now, but consider putting this elsewhere
+    self.line_contour_cfg.morph_close_size = (int(cropped_img.shape[1]/2), 2)
+    contours = _identify_contours(cropped_img, self.line_contour_cfg)
+
+    # Threshold each image separately and add it to our pool to be OCR'd
+    # TODO(searow): consider using only some of contours since we're currently
+    #               using all of them
+    img_set = []
+    for contour in contours:
+      line_img = _crop_image_to_contour(cropped_img, contour)
+      _, thresh_img = cv2.threshold(
+          line_img, thresh=0, maxval=255,
+          type=cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+      img_set.append(thresh_img)
+
+    self.preprocessed_images = img_set
 
   def _perform_ocr(self):
     """Performs OCR on image using ocr_processor.
 
     Returns:
       Array of strings representing individual lines on document
-    """
-    pass
-
-  def _get_mail_fields(self):
-    """Returns MailFields that contains addressee information obtained from OCR.
-
-    Returns:
-      MailFields object with addressee information.
-    """
-    pass
-
-
-
-  def _segment_region_of_interest(self):
-    """Crops region of interest and segments image.
-
-    Segmentation of region of interest is meant to find addressee lines as 
-    well as words within each addressee line.
-
-    Returns:
-      Nested list of horizontal addressee lines and individual words within
-      each line. [[line_1_word_1, line_1_word_2],[line_2_word_1,
-      line_2_word_2, line_2_word_3], etc]
     """
     pass

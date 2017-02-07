@@ -29,9 +29,10 @@ class TestImageProcessing(unittest.TestCase):
 
     for idx, data in enumerate(self.images):
       img = cv2.cvtColor(cv2.imread(data['path']), cv2.COLOR_RGB2GRAY)
-      rotation = image_processor._calculate_rotation(img)
+      rotated_img, angle = image_processor._fix_image_rotation(
+          img, self.processor.rotation_cfg)
       answer = data['rotation_ans']
-      self.assertTrue(answer - error < rotation < answer + error,
+      self.assertTrue(answer - error < angle < answer + error,
                       'Failed test ' + str(idx))
 
   def test_center_region_of_interest(self):
@@ -46,18 +47,20 @@ class TestImageProcessing(unittest.TestCase):
     for idx, data in enumerate(self.images):
       img = cv2.cvtColor(cv2.imread(data['path']), cv2.COLOR_RGB2GRAY)
       # Rotate image
-      rotation = image_processor._calculate_rotation(img)
-      rotated_img = image_processor._rotate_image_ccwise(img, rotation)
+      rotated_img, angle = image_processor._fix_image_rotation(
+          img, self.processor.rotation_cfg)
 
       # Image preprocessing
       _, thresh_img = cv2.threshold(rotated_img, thresh=0, maxval=255,
                                     type=cv2.THRESH_BINARY_INV + 
                                          cv2.THRESH_OTSU)
-      contours = image_processor._get_text_line_contours(rotated_img)
+
+      # ROI detection
+      contours = image_processor._identify_contours(
+          img, self.processor.main_contour_cfg)
       img_center = (rotated_img.shape[0]/2, rotated_img.shape[1]/2)
       best_contour = image_processor._find_best_contour(contours, img_center)
       box, center = image_processor._get_box_from_contour(best_contour)
-
 
       # Check answer
       img_dims = img.shape
@@ -73,7 +76,10 @@ class TestImageProcessing(unittest.TestCase):
                       'Failed test ' + str(idx))
 
   def test_roi_segmentation_quantity(self):
-    pass
+    for idx, data in enumerate(self.images):
+      img = cv2.imread(data['path'])
+      self.processor.get_text_lines(img)
+      pass
 
   def test_ocr_text_results(self):
     pass
