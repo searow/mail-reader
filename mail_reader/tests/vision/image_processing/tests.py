@@ -78,8 +78,7 @@ class TestImageProcessing(unittest.TestCase):
   def test_roi_segmentation_quantity(self):
     for idx, data in enumerate(self.images):
       img = cv2.imread(data['path'])
-      self.processor.get_text_lines(img)
-      pass
+      text = self.processor.get_text_lines(img)
 
   def test_ocr_text_results(self):
     pass

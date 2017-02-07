@@ -266,9 +266,6 @@ class ImageProcessor(object):
 
     # Preprocess is ALL image manipulation before OCR, but not including OCR
     self._preprocess()
-    for img in self.preprocessed_images:
-      cv2.imshow('i', img)
-      cv2.waitKey(0)
     ocr_results = self._perform_ocr()
 
     return ocr_results
@@ -323,4 +320,8 @@ class ImageProcessor(object):
     Returns:
       Array of strings representing individual lines on document
     """
-    pass
+    text_lines = []
+    for im in self.preprocessed_images:
+      text_lines.append(self.ocr_processor.get_text(im))
+
+    return text_lines

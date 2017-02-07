@@ -1,4 +1,6 @@
 import abc
+import pyocr
+from PIL import Image
 
 class OcrProcessor(metaclass=abc.ABCMeta):
   """Generic OCR processing object."""
@@ -18,7 +20,13 @@ class TesseractProcessor(OcrProcessor):
   """
   def __init__(self):
     super().__init__()
+    tools = pyocr.get_available_tools()
+    # TODO(searow): do proper error handling if ocr tools not installed
+    self.tool = tools[0]
 
   def get_text(self, image):
     """Performs OCR on image, returns result string"""
-    pass
+    txt = self.tool.image_to_string(Image.fromarray(image),
+                                    builder=pyocr.builders.TextBuilder())
+    
+    return txt
