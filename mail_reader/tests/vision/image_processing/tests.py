@@ -15,12 +15,14 @@ class TestImageProcessing(unittest.TestCase):
     self.images.append({
       'path' : './mail_reader/tests/vision/image_processing/test_image_0.jpg',
       'rotation_ans' : 0.97,
-      'roi_ans' : (322, 690)
+      'roi_ans' : (322, 690),
+      'segmentation_quantity' : 4
       })
     self.images.append({
       'path' : './mail_reader/tests/vision/image_processing/test_image_1.jpg',
       'rotation_ans' : -6.46,
-      'roi_ans' : (356, 565)
+      'roi_ans' : (356, 565),
+      'segmentation_quantity' : 6
       })
 
   def test_calculate_rotation(self):
@@ -76,9 +78,13 @@ class TestImageProcessing(unittest.TestCase):
                       'Failed test ' + str(idx))
 
   def test_roi_segmentation_quantity(self):
+    # Tests how many horizontal lines were read from the ROI in the image 
     for idx, data in enumerate(self.images):
       img = cv2.imread(data['path'])
       text = self.processor.get_text_lines(img)
+      answer = data['segmentation_quantity']
+      self.assertTrue(answer == len(text),
+                      'Failed test ' + str(idx))
 
   def test_ocr_text_results(self):
     pass
