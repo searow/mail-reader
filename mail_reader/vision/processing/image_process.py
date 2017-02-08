@@ -202,6 +202,27 @@ def _crop_image_to_contour(img, contour):
 
   return cropped_img
 
+def _reorder_contours_by_position(contours):
+  """Sorts contours by height position, closest to top = first.
+
+  Args:
+    contours: Contours to be sorted.
+
+  Returns:
+    Contours in sorted order by height position
+  """
+  def __get_height(contour):
+    rect = cv2.minAreaRect(contour)
+    box = np.int0(cv2.boxPoints(rect))
+    return box[0][0]
+
+  # We sort here by the 2nd return value of _get_box_from_contour, which is
+  # the height position of the center of the contour.
+  in_order = sorted(contours, 
+                    key=lambda item: _get_box_from_contour(item)[1][0])
+
+  return in_order
+
 class PreprocessConfig(object):
   """Holds preprocessing configuration values for different operations."""
 
@@ -304,7 +325,7 @@ class ImageProcessor(object):
     self.line_contour_cfg.morph_close_size = (int(cropped_img.shape[1]/2), 2)
     contours = _identify_contours(cropped_img, self.line_contour_cfg)
     # Reorder contours in order of height position (top = first)
-
+    contours = _reorder_contours_by_position(contours)
 
     # Threshold each image separately and add it to our pool to be OCR'd
     # TODO(searow): consider using only some of contours since we're currently
@@ -333,4 +354,3 @@ class ImageProcessor(object):
       text_lines.append(self.ocr_processor.get_text(im))
 
     return text_lines
-
