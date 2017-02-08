@@ -211,17 +211,41 @@ def _reorder_contours_by_position(contours):
   Returns:
     Contours in sorted order by height position
   """
-  def __get_height(contour):
-    rect = cv2.minAreaRect(contour)
-    box = np.int0(cv2.boxPoints(rect))
-    return box[0][0]
-
   # We sort here by the 2nd return value of _get_box_from_contour, which is
   # the height position of the center of the contour.
   in_order = sorted(contours, 
                     key=lambda item: _get_box_from_contour(item)[1][0])
 
   return in_order
+
+def _remove_small_contours(contours):
+  """Removes any contours that are too small to be valuable.
+
+  Args:
+    contours: List of contours to examine.
+
+  Returns:
+    Same list of contours, but with any tiny contours removed.
+  """
+  # We remove contours based on the height and width of the contour, found 
+  # from max - min in each direction.
+  # TODO(searow): currently setting to 15 pixels, should find the best value 
+  #               to use here.
+  min_px = 15
+  remove_idx = []
+  for idx, contour in enumerate(contours):
+    heights = sorted(contour[:, :, 0])
+    height = heights[-1] - heights[0]
+    widths = sorted(contour[:, :, 1])
+    width = widths[-1] - widths[0]
+
+    if height < min_px or width < min_px:
+      remove_idx.append(idx)
+
+  # Filter out small contours 
+  filtered = [c for idx, c in enumerate(contours) if idx not in remove_idx]
+  return filtered
+
 
 class PreprocessConfig(object):
   """Holds preprocessing configuration values for different operations."""
@@ -324,8 +348,10 @@ class ImageProcessor(object):
     # TODO(searow): using width/2 for now, but consider putting this elsewhere
     self.line_contour_cfg.morph_close_size = (int(cropped_img.shape[1]/2), 2)
     contours = _identify_contours(cropped_img, self.line_contour_cfg)
-    # Reorder contours in order of height position (top = first)
+    # Reorder contours in order of height position (top = first) and throw 
+    # away anything small
     contours = _reorder_contours_by_position(contours)
+    contours = _remove_small_contours(contours)
 
     # Threshold each image separately and add it to our pool to be OCR'd
     # TODO(searow): consider using only some of contours since we're currently
@@ -339,9 +365,6 @@ class ImageProcessor(object):
       img_set.append(thresh_img)
 
     self.preprocessed_images = img_set
-
-  def _reorder_contours(self):
-    pass
 
   def _perform_ocr(self):
     """Performs OCR on image using ocr_processor.
