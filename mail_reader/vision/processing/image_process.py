@@ -186,13 +186,16 @@ def _crop_image_to_contour(img, contour):
 
   # Isolate ROI
   # Min values are 0 for bot/left, max are width or height for top/right
-  bot = min(roi_box[:,1])
+  # TODO(searow): Added a +-1 here to each to give a little more border. This
+  #               probably isn't the best way to do this, but it's to make 
+  #               sure that tesseract is outputting info.
+  bot = min(roi_box[:,1] - 1)
   bot = 0 if bot < 0 else bot
-  top = max(roi_box[:,1])
+  top = max(roi_box[:,1] + 1)
   top = rows if top >= rows else top
-  left = min(roi_box[:,0])
+  left = min(roi_box[:,0] - 1)
   left = 0 if left < 0 else left
-  right = max(roi_box[:,0])
+  right = max(roi_box[:,0] + 1)
   right = cols if right >= cols else right
 
   cropped_img = img[bot:top, left:right]
@@ -300,6 +303,8 @@ class ImageProcessor(object):
     # TODO(searow): using width/2 for now, but consider putting this elsewhere
     self.line_contour_cfg.morph_close_size = (int(cropped_img.shape[1]/2), 2)
     contours = _identify_contours(cropped_img, self.line_contour_cfg)
+    # Reorder contours in order of height position (top = first)
+
 
     # Threshold each image separately and add it to our pool to be OCR'd
     # TODO(searow): consider using only some of contours since we're currently
@@ -314,6 +319,9 @@ class ImageProcessor(object):
 
     self.preprocessed_images = img_set
 
+  def _reorder_contours(self):
+    pass
+
   def _perform_ocr(self):
     """Performs OCR on image using ocr_processor.
 
@@ -325,3 +333,4 @@ class ImageProcessor(object):
       text_lines.append(self.ocr_processor.get_text(im))
 
     return text_lines
+
