@@ -87,7 +87,13 @@ class TestImageProcessing(unittest.TestCase):
                       'Failed test ' + str(idx))
 
   def test_ocr_text_results(self):
-    pass
+    # TODO(searow): print actual test images on envelope and take pictures so
+    #               don't have to use personal info. just print the text data
+    #               for now as a placeholder
+    for idx, data in enumerate(self.images):
+      img = cv2.imread(data['path'])
+      text = self.processor.get_text_lines(img)
+      print(text)
 
   def tearDown(self):
     pass
