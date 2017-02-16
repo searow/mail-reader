@@ -1,7 +1,7 @@
 import difflib
 
 def _get_box_scores(name_to_match, name_list, box_multiplier):
-  """Calculates box score list for each name in name_list and returns scores.
+  """Calculates box score dict for each name in name_list and returns scores.
 
   Calculates score for each name. Only the highest score for each box is saved
   and the rest are discarded.
@@ -13,15 +13,14 @@ def _get_box_scores(name_to_match, name_list, box_multiplier):
     box_multiplier: List of boxes that should have a multiplied score.
 
   Returns:
-    Nested list of box number and score [[box, score], [box, score], ...].
+    Dictionary of scores, keys = box number as int, values = best score.
   """
   # Create differ object here so we don't have to keep setting the first seq
   differ = difflib.SequenceMatcher()
   differ.set_seq1(name_to_match)
 
   multiplier = 2  # Score multiplier if matches box_multiplier
-  box_scores = []
-  box_set = set()
+  box_scores = {}
 
   for [name, box] in name_list:
     # Evaluate similarity and only add if unique. If not unique, only the 
@@ -30,18 +29,11 @@ def _get_box_scores(name_to_match, name_list, box_multiplier):
     score = differ.ratio()
     if box in box_multiplier:
       score *= multiplier
-    score_item = [box, score] 
-    if box in box_set:
-      # TODO(searow): if box score list evaluation is getting long, consider 
-      #               switching to hashing box # for quick finding of existing 
-      #               scores. 
-      for idx, [b, s] in enumerate(box_scores):
-        if b == box:
-          if s > score:
-            box_scores[idx][1] = s
+    if box in box_scores.keys():
+      if score > box_scores[box]:
+        box_scores[box] = score
     else:
-      box_set.add(box)
-      box_scores.append(score_item)
+      box_scores[box] = score
 
   return box_scores
 
