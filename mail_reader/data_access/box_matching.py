@@ -1,4 +1,5 @@
 import difflib
+from operator import itemgetter
 
 def _get_box_scores(name_to_match, name_list, box_multiplier):
   """Calculates box score dict for each name in name_list and returns scores.
@@ -29,7 +30,7 @@ def _get_box_scores(name_to_match, name_list, box_multiplier):
     score = differ.ratio()
     if box in box_multiplier:
       score *= multiplier
-    if box in box_scores.keys():
+    if box in box_scores:
       if score > box_scores[box]:
         box_scores[box] = score
     else:
@@ -41,12 +42,24 @@ def _combine_boxes_scores(box_scores):
   """Returns overall box score list sorted in decreasing score order.
 
   Args:
-    box_scores: Nested list of box score for each name that was checked.
+    box_scores: List of dictionaries of box scores, which is a list of the 
+                results from _get_box_scores.
 
   Returns:
     Overall box score list in decreasing score order.
   """
-  pass
+  # Add the score for each box into a new dictionary, adding values as needed.
+  temp_scores = {}
+  for box_scores_for_name in box_scores:
+    for box in box_scores_for_name:
+      if box not in temp_scores:
+        temp_scores[box] = 0
+      temp_scores[box] += box_scores_for_name[box]
+
+  # Convert to list so we can sort by final score
+  final_scores = sorted(temp_scores.items(), key=itemgetter(1), reverse=True) 
+
+  return final_scores
 
 class BoxMatcher(object):
   """Performs box matching operations to match MailFields with box number.
