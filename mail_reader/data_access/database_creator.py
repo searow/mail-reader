@@ -27,7 +27,7 @@ class DatabaseCreator(object):
 
   Attributes:
     __db_conn: Sqlite database connection that will be eventually returned.
-    __df: Pandas dataframe for file with data to put into database.
+    _df: Pandas dataframe for file with data to put into database.
   """
   def __init__(self):
     pass
@@ -42,11 +42,23 @@ class DatabaseCreator(object):
       In-memory sqlite database.
     """
     # Save excel data into memory
-    self.__df = pandas.read_excel(path)
+    self._df = pandas.read_excel(path)
+    self._column_reformat()
     # Create SQL database in memory and populate
     self.__db_conn = sqlite3.connect(':memory:')
     self.__create_tables()
     self.__populate_file_entries()
+
+    return self.__db_conn
+
+  def _column_reformat(self):
+    """Method to override so dataframe instance variable can be modified.
+
+    Method is called after pandas.read_excel() is called so we can perform
+    maintenance on the dataframe in case the column headers need modification.
+    Base class is not implemented since it uses the default column names.
+    """
+    pass
 
   def __create_tables(self):
     """Manually create tables to populate."""
@@ -90,6 +102,8 @@ class DatabaseCreator(object):
         );
     """)
 
+    self.__db_conn.commit()
+
   def __populate_file_entries(self):
     """Populates database with data in excel file."""
     c = self.__db_conn.cursor()
@@ -104,7 +118,7 @@ class DatabaseCreator(object):
 
     # Populate the rest of the tables since we have the active_boxes data, 
     # going row by row and adding items.
-    for idx, row in enumerate(self.__df.iterrows()):
+    for idx, row in enumerate(self._df.iterrows()):
       key = row[1]
       # Table entity_statuses
       c.execute('''
@@ -134,12 +148,14 @@ class DatabaseCreator(object):
           VALUES (?, ?);
       ''', (key['SUITE'], idx))
 
+    self.__db_conn.commit()
+
   def __determine_active_boxes(self):
     """Checks dataframe to determine if boxes are active."""
     # Check all of the boxes. Set default box status to inactive and look for
     # any active ones. Result stored in boxes dictionary and returned.
     boxes = {}
-    for row in self.__df.iterrows():
+    for row in self._df.iterrows():
       keys = row[1]
       # Set defaults to inactive
       if keys['SUITE'] not in boxes:
@@ -152,3 +168,8 @@ class BapDatabaseCreator(DatabaseCreator):
   """Subclass to handle specific data files."""
   def __init__(self):
     pass
+
+  def _column_reformat(self):
+    super()._column_reformat()
+    # Standard format is all caps. Our data isn't all caps, so translate it.
+    self._df.rename(columns=lambda x: x.upper(), inplace=True)
