@@ -85,7 +85,15 @@ class BoxMatcher(object):
       List of box numbers with associated match score:
         [[box, score], [box, score], ...]
     """
-    pass
+    box_multipliers = mail_fields.probable_box
+    scores = []
+    for name in mail_fields.addressee_line['all_names']:
+      possible_names = self.__get_active_names_for_letter(name[0])
+      name_score = _get_box_scores(name, possible_names, box_multipliers)
+      scores.append(name_score)
+
+    final_score = _combine_boxes_scores(scores)
+    print(final_score)
 
   def set_database_connection(self, db_conn):
     """Sets sqlite3 database connection to use for box matching.
@@ -97,6 +105,34 @@ class BoxMatcher(object):
       None.
     """
     self.__db_conn = db_conn
+
+  def __get_active_names_for_letter(self, letter):
+    """Queries database for matches beginning with letter.
+
+    First letter of string is given. Queries database for names starting with
+    that string and returns the names along with their boxes. Only returns 
+    names if they are active.
+
+    Args:
+      letter: First letter of name to search.
+
+    Returns:
+      Nested list of names and associated boxes [['NAME1', 20], ['NAME2', 30]]
+    """
+    c = self.__db_conn.cursor()
+    c.execute('''
+        SELECT DISTINCT n.unique_entity_name, b.box_id
+                   FROM unique_entity_names as n
+                        INNER JOIN box_entities as b
+                                ON n.entity_id=b.entity_id
+                        INNER JOIN entity_statuses as s
+                                ON s.entity_id=b.entity_id
+                     WHERE n.unique_entity_name 
+                           LIKE ?
+                       AND s.current=1;
+    ''', (letter+'%',))
+
+    return c.fetchall()
 
   def _calculate_scores(self):
     """Calculates score for the fields using the database and returns matches.
