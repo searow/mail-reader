@@ -130,7 +130,7 @@ class DatabaseCreator(object):
       # Catch IntegrityError here since we might be adding non-unique 
       # combinations of entity_id + unique_entity_name. We don't need to do
       # anything to handle them for now.
-      raw_name = key['NAME']
+      raw_name = key['NAME'].upper()
       names = _split_names(raw_name)
       # Insert every name into the database, skipping integrity errors
       for name in names:
