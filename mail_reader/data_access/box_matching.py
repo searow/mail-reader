@@ -93,7 +93,6 @@ class BoxMatcher(object):
       scores.append(name_score)
 
     final_score = _combine_boxes_scores(scores)
-    print(final_score)
 
   def set_database_connection(self, db_conn):
     """Sets sqlite3 database connection to use for box matching.
