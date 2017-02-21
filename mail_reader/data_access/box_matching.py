@@ -88,11 +88,14 @@ class BoxMatcher(object):
     box_multipliers = mail_fields.probable_box
     scores = []
     for name in mail_fields.addressee_line['all_names']:
-      possible_names = self.__get_active_names_for_letter(name[0])
-      name_score = _get_box_scores(name, possible_names, box_multipliers)
+      possible_names = self.__get_active_names_for_letter(name[0].upper())
+      name_score = _get_box_scores(name.upper(), possible_names, 
+                                   box_multipliers)
       scores.append(name_score)
 
     final_score = _combine_boxes_scores(scores)
+
+    return final_score
 
   def set_database_connection(self, db_conn):
     """Sets sqlite3 database connection to use for box matching.
