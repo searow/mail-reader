@@ -118,6 +118,8 @@ class BoxMatcher(object):
     Returns:
       Nested list of names and associated boxes [['NAME1', 20], ['NAME2', 30]]
     """
+    # TODO(searow): need to add a way to access and assess both active and
+    #               inactive people eventually.
     c = self.__db_conn.cursor()
     c.execute('''
         SELECT DISTINCT n.unique_entity_name, b.box_id
