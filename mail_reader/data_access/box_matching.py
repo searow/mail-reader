@@ -46,7 +46,8 @@ def _combine_boxes_scores(box_scores):
                 results from _get_box_scores.
 
   Returns:
-    Overall box score list in decreasing score order.
+    Overall box score list in decreasing score order [(box, score), 
+    (box, score), (box, score), ...]
   """
   # Add the score for each box into a new dictionary, adding values as needed.
   temp_scores = {}
@@ -68,7 +69,7 @@ class BoxMatcher(object):
   to the database.
 
   Attributes:
-    __database: Database from which to get box data.
+    __db_conn: Database connection from which to get box data.
     __fields: MailFields object passed in by get_matches.
   """
   def __init__(self):
@@ -86,16 +87,16 @@ class BoxMatcher(object):
     """
     pass
 
-  def set_database(self, database):
-    """Sets database to use for box matching.
+  def set_database_connection(self, db_conn):
+    """Sets sqlite3 database connection to use for box matching.
 
     Args:
-      database: Database to access.
+      db_conn: Database connect to use.
 
     Returns:
       None.
     """
-    pass
+    self.__db_conn = db_conn
 
   def _calculate_scores(self):
     """Calculates score for the fields using the database and returns matches.
