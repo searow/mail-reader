@@ -132,18 +132,3 @@ class BoxMatcher(object):
     ''', (letter+'%',))
 
     return c.fetchall()
-
-  def _calculate_scores(self):
-    """Calculates score for the fields using the database and returns matches.
-
-    Score is calculated using two fields: names in box and probable box. 
-    Gets probable matches for each name and calculates similarity score. Best 
-    similarity score for each box is saved. If box with similarity score is
-    contained in probable box in fields, score is multiplied. Score for each
-    box for each name is combined and overall score for each box is saved.
-
-    Returns:
-      List of box numbers with associated match score: 
-        [[box, score], [box, score], ...]
-    """
-    pass
