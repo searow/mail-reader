@@ -23,3 +23,13 @@ class MailFields(object):
         'state': [],
         'zip_code': []  # 5 digit zip only
     }
+
+  def is_populated(self):
+    """Returns true if MailFields has enough fields to be useful."""
+    # Only condition right now is that there are names in the all_names field.
+    # This check is mostly to make sure other parts of the name matching
+    # don't fail.
+    if len(self.addressee_line['all_names']) > 0:
+      return True
+
+    return False

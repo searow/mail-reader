@@ -107,6 +107,10 @@ class BoxMatcher(object):
     Returns:
       Final scores list, with scores increased for top contenders.
     """
+    # Exit and return empty match list if scores is empty since top_score 
+    # relies on indexing scores[0]
+    if len(scores) == 0:
+      return []
     # scores is already sorted in desc order, so save the top score and modify
     # each score until we don't have the top score anymore. 
     top_score = scores[0][1]

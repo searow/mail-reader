@@ -16,6 +16,10 @@ def _fix_image_rotation(img, config):
   """
   contours = _identify_contours(img, config)
 
+  # Throw exception if we can't find any contours
+  if len(contours) == 0:
+    raise NoContoursError
+
   # Use the largest contour to determine angle. Note that angle given is
   # -90 < angle <= 0, so correct sign to be how we want.
   rect = cv2.minAreaRect(contours[0])
@@ -313,9 +317,13 @@ class ImageProcessor(object):
     self.working_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
 
     # Preprocess is ALL image manipulation before OCR, but not including OCR
-    self._preprocess()
-    ocr_results = self._perform_ocr()
-
+    try:
+      self._preprocess()
+      ocr_results = self._perform_ocr()
+    except NoContoursError:
+      # Return an empty set if we don't have contours at any point in time.
+      return []
+    
     return ocr_results
 
   def _preprocess(self):
@@ -377,3 +385,10 @@ class ImageProcessor(object):
       text_lines.append(self.ocr_processor.get_text(im))
 
     return text_lines
+
+class Error(Exception):
+  pass
+
+class NoContoursError(Error):
+  """Occurs when contour finding functions can't find any useful contours."""
+  pass

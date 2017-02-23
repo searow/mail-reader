@@ -55,7 +55,13 @@ class TextAnalyzer(object):
     # Only evaluate lines that are predominantly alphanumeric
     for line in text_lines:
       if _alnum_percent(line) > alphanum_threshold:  
-        parsed = usaddress.tag(line)[0]
+        try:
+          parsed = usaddress.tag(line)[0]
+        except usaddress.RepeatedLabelError as e:
+          # If usaddress gets confused, just throw away the answer as if
+          # we got nothing for now.
+          # TODO(searow): fix this to handle multiple tags and labels.
+          parsed = {}
         for tag in parsed:
           self._add_to_fields(tag, parsed[tag])
     return self.__fields
