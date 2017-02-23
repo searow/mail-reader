@@ -14,6 +14,13 @@ class TestDatabaseCreator(unittest.TestCase):
     result = c.fetchall()
     answer = [(111, 0), (5, 1), (22, 2), (111, 3)]
     self.assertEqual(result, answer)
+    c.execute('SELECT * FROM entity_statuses;')
+    result = c.fetchall()
+    answer = [(0, 1, 'RONALD MCDONALD'),
+              (1, 0, 'GRIMACE'),
+              (2, 1, 'THE HAMBURGLAR'),
+              (3, 0, 'MAYOR MCCHEESE')]
+    self.assertEqual(result, answer)
 
   def tearDown(self):
     pass
