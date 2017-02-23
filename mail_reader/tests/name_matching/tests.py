@@ -103,10 +103,10 @@ class TestQuickNameAccessor(unittest.TestCase):
       matches = matcher.get_matches(input_fields)
 
       # Checks are here instead of asserts. Append to error list as needed.
-      if not matches[0][0] == key['SUITE']:
+      if not matches[0]['box_number'] == key['SUITE']:
         errors.append({
           'raw_name': key['NAME'],
-          'solved_suite': matches[0][0],
+          'solved_suite': matches[0]['box_number'],
           'correct_suite': key['SUITE'],
           'matches': matches
         })
@@ -119,7 +119,8 @@ class TestQuickNameAccessor(unittest.TestCase):
       print('First 5 matches:')
       for idx, match in enumerate(error['matches']):
         if idx < 5:
-          print('  ' + str(match))
+          print('  Box: ' + str(match['box_number']) + 
+                ' Score: ' + str(match['score']))
     self.assertEqual(len(errors), 0)
 
   def test_all_entries_without_suites(self):
@@ -153,10 +154,10 @@ class TestQuickNameAccessor(unittest.TestCase):
       matches = matcher.get_matches(input_fields)
 
       # Checks are here instead of asserts. Append to error list as needed.
-      if not matches[0][0] == key['SUITE']:
+      if not matches[0]['box_number'] == key['SUITE']:
         errors.append({
           'raw_name': key['NAME'],
-          'solved_suite': matches[0][0],
+          'solved_suite': matches[0]['box_number'],
           'correct_suite': key['SUITE'],
           'matches': matches
         })
@@ -169,7 +170,8 @@ class TestQuickNameAccessor(unittest.TestCase):
       print('First 5 matches:')
       for idx, match in enumerate(error['matches']):
         if idx < 5:
-          print('  ' + str(match))
+          print('  Box: ' + str(match['box_number']) + 
+                ' Score: ' + str(match['score']))
     self.assertEqual(len(errors), 0)
 
   def test_single_custom_name(self):

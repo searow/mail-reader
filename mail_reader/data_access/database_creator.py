@@ -76,8 +76,9 @@ class DatabaseCreator(object):
     """)
     c.execute("""
         CREATE TABLE entity_statuses (
-            entity_id  INTEGER,
-            current    BOOLEAN,
+            entity_id     INTEGER,
+            current       BOOLEAN,
+            original_name TEXT,
             PRIMARY KEY (entity_id)
         );
     """)
@@ -122,9 +123,9 @@ class DatabaseCreator(object):
       key = row[1]
       # Table entity_statuses
       c.execute('''
-          INSERT INTO entity_statuses (entity_id, current)
-          VALUES (?, ?);
-      ''', (idx, key['ACTIVE']))
+          INSERT INTO entity_statuses (entity_id, current, original_name)
+          VALUES (?, ?, ?);
+      ''', (idx, key['ACTIVE'], key['NAME']))
 
       # Table unique_entity_names
       # Catch IntegrityError here since we might be adding non-unique 

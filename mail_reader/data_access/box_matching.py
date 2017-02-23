@@ -97,7 +97,28 @@ class BoxMatcher(object):
     combined_score = _combine_boxes_scores(scores)
     final_score = self.__resolve_conflicts(combined_score, all_names)
 
-    return final_score
+    final_matches = []
+    for [box, score] in final_score:
+      d = {}
+      d['box_number'] = box
+      d['score'] = score
+      d['all_names'] = self._get_active_names_in_box(box)
+      final_matches.append(d)
+
+    return final_matches
+
+  def _get_active_names_in_box(self, box_number):
+    c = self.__db_conn.cursor()
+    c.execute('''
+        SELECT e.original_name
+          FROM box_entities as b
+               INNER JOIN entity_statuses as e
+                       ON b.entity_id=e.entity_id
+         WHERE b.box_id=?
+           AND e.current=1;
+     ''', (box_number,))
+
+    return c.fetchall()
 
   def __resolve_conflicts(self, scores, names):
     """Resolves cases where top scores are same for multiple boxes.
