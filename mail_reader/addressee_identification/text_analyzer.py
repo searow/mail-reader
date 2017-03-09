@@ -1,6 +1,7 @@
 import mail_reader.addressee_identification.mail_fields as mail_fields
 import usaddress
 import re
+import string
 
 def _alnum_percent(line):
   """Calculates % of alphanumeric characters in string.
@@ -13,14 +14,34 @@ def _alnum_percent(line):
   """
   total = len(line)
 
+  test_set = set()
+  for letter in string.ascii_letters:
+    test_set.add(letter)
+  test_set.add(' ')
+
   # Return a failure (no good characters) if there are no characters
   if total < 1:
     return 0
 
   alnum_count = 0
+  star_count = 0
+  bar_count = 0
   for letter in line:
-    if letter.isalnum():
+    # if letter.isalnum():
+    if letter in test_set:
       alnum_count += 1
+    if letter == '*':
+      star_count += 1
+    if letter == 'I' or letter == 'i' or letter == 'l' or letter == '|':
+      bar_count += 1
+
+  # TODO(searow): properly implement this, but sticking this here for now.
+
+  if star_count / total > 0.1:
+    return 0
+
+  if bar_count / total > 0.5:
+    return 0
 
   return alnum_count / total
 
@@ -50,7 +71,7 @@ class TextAnalyzer(object):
 
     self.__fields = mail_fields.MailFields()
 
-    alphanum_threshold = 0.2
+    alphanum_threshold = 0.5
 
     # Only evaluate lines that are predominantly alphanumeric
     for line in text_lines:
