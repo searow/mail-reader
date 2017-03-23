@@ -1,6 +1,23 @@
 import difflib
 from operator import itemgetter
 
+def _prune_common_words(names):
+  """Removes common words from list of names.
+
+  Args:
+    names: List of names as strings input.
+  Returns:
+    Same list of names, but with common words removed.
+  """
+  common_words = set(['OWNER', 
+      'REGISTERED', 'BUSINESS',
+      'CURRENT', 'RESIDENT',
+      'OR', 'AND', 'TO'
+      ])
+
+  pruned = [name for name in names if name.upper() not in common_words]
+  return pruned
+
 def _get_box_scores(name_to_match, name_list, box_multiplier):
   """Calculates box score dict for each name in name_list and returns scores.
 
@@ -87,6 +104,7 @@ class BoxMatcher(object):
     """
     box_multipliers = mail_fields.probable_box
     all_names = mail_fields.addressee_line['all_names']
+    all_names = _prune_common_words(all_names)
     scores = []
     for name in all_names:
       possible_names = self.__get_active_names_for_letter(name[0].upper())
