@@ -12,7 +12,9 @@ def _prune_common_words(names):
   common_words = set(['OWNER', 
       'REGISTERED', 'BUSINESS',
       'CURRENT', 'RESIDENT',
-      'OR', 'AND', 'TO'
+      'OR', 'AND', 'TO',
+      'MR', 'MRS', 'MS',
+      'INC'
       ])
 
   pruned = [name for name in names if name.upper() not in common_words]
